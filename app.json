@@ -18,7 +18,12 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anishmohanta.ageverifyapp",
-      "permissions": ["CAMERA", "INTERNET"]
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -27,7 +32,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Camera is needed to photograph your ID document and selfie for age verification."
+          "cameraPermission": "Camera is needed to photograph your ID document and selfie for age verification.",
+          "microphonePermission": "Microphone is needed to record your verification video.",
+          "recordAudioAndroid": true
         }
       ]
     ]

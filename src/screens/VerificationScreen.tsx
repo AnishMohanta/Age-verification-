@@ -1,38 +1,69 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, Button } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Button,
+  Linking,
+} from "react-native";
 import { WebView } from "react-native-webview";
-import { useCameraPermissions } from "expo-camera";
+import { useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { VERIFF_DONE_URL_FRAGMENT } from "../config";
 
 interface Props {
   verificationUrl: string;
-  onFinished: () => void; // user completed the flow inside Veriff
+  onFinished: () => void;
   onCancel: () => void;
 }
 
-export default function VerificationScreen({ verificationUrl, onFinished, onCancel }: Props) {
-  // Android needs the CAMERA runtime permission BEFORE the WebView can use the camera.
-  const [permission, requestPermission] = useCameraPermissions();
+export default function VerificationScreen({
+  verificationUrl,
+  onFinished,
+  onCancel,
+}: Props) {
+  const [camera, requestCamera] = useCameraPermissions();
+  const [mic, requestMic] = useMicrophonePermissions();
+  const [asked, setAsked] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Ask for permission automatically the first time the screen opens.
+  // Ask for camera AND microphone up front, one after the other,
+  // so the WebView's combined request is already granted when Veriff asks.
   useEffect(() => {
-    if (permission && !permission.granted && permission.canAskAgain) {
-      requestPermission();
-    }
-  }, [permission]);
+    if (!camera || !mic || asked) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAsked(true);
+    (async () => {
+      if (!camera.granted && camera.canAskAgain) await requestCamera();
+      if (!mic.granted && mic.canAskAgain) await requestMic();
+    })();
+  }, [camera, mic, asked]);
 
-  // Permission state not loaded yet.
-  if (!permission) return <ActivityIndicator style={styles.center} />;
+  if (!camera || !mic) return <ActivityIndicator style={styles.center} />;
 
-  // Permission denied: explain and let the user retry or cancel.
-  if (!permission.granted) {
+  if (!camera.granted || !mic.granted) {
+    const blocked =
+      (!camera.granted && !camera.canAskAgain) ||
+      (!mic.granted && !mic.canAskAgain);
     return (
       <View style={styles.center}>
         <Text style={{ marginBottom: 12, textAlign: "center" }}>
-          Camera access is required to verify your ID.
+          Camera and microphone access are required to verify your ID.
         </Text>
-        <Button title="Grant camera access" onPress={requestPermission} />
+        {blocked ? (
+          <Button
+            title="Open settings"
+            onPress={() => Linking.openSettings()}
+          />
+        ) : (
+          <Button
+            title="Grant access"
+            onPress={async () => {
+              if (!camera.granted) await requestCamera();
+              if (!mic.granted) await requestMic();
+            }}
+          />
+        )}
         <View style={{ height: 8 }} />
         <Button title="Cancel" onPress={onCancel} />
       </View>
@@ -45,12 +76,11 @@ export default function VerificationScreen({ verificationUrl, onFinished, onCanc
         source={{ uri: verificationUrl }}
         javaScriptEnabled
         domStorageEnabled
-        // Let the Veriff page use the camera without extra prompts.
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
+        originWhitelist={["https://*"]}
+        webviewDebuggingEnabled // lets you inspect via chrome://inspect; remove for production
         onLoadEnd={() => setLoading(false)}
-        // When Veriff redirects to our callback URL the flow is complete.
-        // We block that navigation and move on to the result screen.
         onShouldStartLoadWithRequest={(req) => {
           if (req.url.includes(VERIFF_DONE_URL_FRAGMENT)) {
             onFinished();
@@ -59,11 +89,18 @@ export default function VerificationScreen({ verificationUrl, onFinished, onCanc
           return true;
         }}
       />
-      {loading && <ActivityIndicator style={StyleSheet.absoluteFill} size="large" />}
+      {loading && (
+        <ActivityIndicator style={StyleSheet.absoluteFill} size="large" />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
 });

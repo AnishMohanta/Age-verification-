@@ -1,6 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { startVerification } from "../api/verification";
+import colors from "../constants/colors";
 
 interface Props {
   // Called once Veriff has created a session for this user.
@@ -37,43 +49,116 @@ export default function SignUpScreen({ onSessionReady }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create your account</Text>
-      <Text style={styles.subtitle}>
-        You will need to verify your age with a photo ID (passport, driving licence or ID card).
-      </Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.heading}>
+          <Text style={styles.eyebrow}>AGE VERIFICATION</Text>
+          <Text style={styles.title}>Create your account</Text>
+          <Text style={styles.subtitle}>
+            You will need to verify your age with a photo ID (passport, driving licence or ID card).
+          </Text>
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="First name"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Last name"
-        value={lastName}
-        onChangeText={setLastName}
-      />
+        <View style={styles.field}>
+          <Text style={styles.label}>FIRST NAME</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Your first name"
+            placeholderTextColor={colors.textMuted}
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="next"
+            accessibilityLabel="First name"
+          />
+        </View>
 
-      <Button
-        title={loading ? "Please wait..." : "Continue to age verification"}
-        onPress={handleContinue}
-        disabled={loading}
-      />
-    </View>
+        <View style={styles.field}>
+          <Text style={styles.label}>LAST NAME</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Your last name"
+            placeholderTextColor={colors.textMuted}
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            onSubmitEditing={handleContinue}
+            accessibilityLabel="Last name"
+          />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          onPress={handleContinue}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: loading, busy: loading }}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.onAccent} />
+          ) : (
+            <Text style={styles.buttonText}>Sign up</Text>
+          )}
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "center" },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
-  subtitle: { color: "#555", marginBottom: 24 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+  container: { flex: 1, backgroundColor: colors.background },
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 36,
   },
+  heading: { marginBottom: 34 },
+  eyebrow: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginBottom: 14,
+  },
+  title: { color: colors.textPrimary, fontSize: 32, fontWeight: "800", marginBottom: 10 },
+  subtitle: { color: colors.textSecondary, fontSize: 17, lineHeight: 24 },
+  field: { marginBottom: 20 },
+  label: {
+    color: colors.label,
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    color: colors.textPrimary,
+    fontSize: 17,
+    height: 64,
+    paddingHorizontal: 18,
+  },
+  button: {
+    alignItems: "center",
+    backgroundColor: colors.accent,
+    borderColor: colors.accentBorder,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 64,
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  buttonPressed: { opacity: 0.82 },
+  buttonText: { color: colors.onAccent, fontSize: 19, fontWeight: "800" },
 });

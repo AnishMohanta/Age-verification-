@@ -117,7 +117,8 @@ export async function fetchStatus(sessionId: string): Promise<VerificationStatus
   const DEMO_FALLBACK_DOB = "2000-09-06";
 
 //   const dob: string | null = v.person?.dateOfBirth ?? null;
-const dob: string | null = v.person?.dateOfBirth ?? DEMO_FALLBACK_DOB;
+// const dob: string | null = v.person?.dateOfBirth ?? DEMO_FALLBACK_DOB;
+const dob: string | null = v.person?.dateOfBirth 
   return {
     status: v.status,
     dateOfBirth: dob,
